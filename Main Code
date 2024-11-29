@@ -1,0 +1,52 @@
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+
+# Constants
+gamma = 2 * np.pi * 42.58e6  # Gyromagnetic ratio for proton in Hz/T
+B0 = 1.5  # Static magnetic field in Tesla
+T1 = 1.0  # Longitudinal relaxation time in seconds
+T2 = 0.1  # Transverse relaxation time in seconds
+
+# Molecular vibration parameters
+vibration_frequency = 10e3  # Vibration frequency in Hz
+vibration_amplitude = 0.01  # Modulated field strength in Tesla
+
+# Initial magnetization
+M0 = np.array([0, 0, 1])  # Initial magnetization along z-axis (equilibrium)
+
+# Time-dependent magnetic field from molecular vibration
+def B_vib(t):
+    return vibration_amplitude * np.cos(2 * np.pi * vibration_frequency * t)
+
+# Bloch equation with vibration
+def bloch_equation(t, M):
+    Mx, My, Mz = M
+    Bvib = B_vib(t)  # Modulated magnetic field
+    dMx = gamma * (My * (B0 + Bvib)) - Mx / T2
+    dMy = -gamma * (Mx * (B0 + Bvib)) - My / T2
+    dMz = -(Mz - 1) / T1
+    return [dMx, dMy, dMz]
+
+# Time range for simulation
+t_span = (0, 0.1)  # 100 ms
+t_eval = np.linspace(*t_span, 1000)
+
+# Solve the Bloch equation
+solution = solve_ivp(bloch_equation, t_span, M0, t_eval=t_eval)
+
+# Extract results
+time = solution.t
+Mx, My, Mz = solution.y
+
+# Plotting the results
+plt.figure(figsize=(10, 6))
+plt.plot(time, Mx, label="Mx (Transverse X)", color="r")
+plt.plot(time, My, label="My (Transverse Y)", color="b")
+plt.plot(time, Mz, label="Mz (Longitudinal Z)", color="g")
+plt.title("Magnetization Evolution with Molecular Vibration")
+plt.xlabel("Time (s)")
+plt.ylabel("Magnetization (Normalized)")
+plt.legend()
+plt.grid()
+plt.show()
